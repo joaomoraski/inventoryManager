@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UserRegisterRequest;
 use App\Models\Manager;
 use App\Models\User;
+use App\Repositories\ManagerRepository;
+use App\Repositories\UserRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -13,46 +16,35 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    public function register(UserRegisterRequest $request)
     {
-        $request->validate([
-            "name" => "required",
-            "email" => "required|email|unique:users",
-            "password" => "required|confirmed",
-            "cpf" => "required|max:20",
-            "rg" => "max:20",
-            "address" => "min:10|max:200",
-            "addressNumber" => "max:10",
-            "telephone" => "required|max:20",
-            "postalCode" => "max:20",
-            "salary" => "numeric"
+        $data = $request->validated();
+
+        $manager = $this->createManager([
+            "name" => $data['name'],
+            "email" => $data['email'],
+            "typeIdentificationNumber" => isset($data['cpf']) ? 2 : 0, // CPF
+            "identificationNumber" => $data['cpf'] ?? "",
+            "address" => $data['address'] ?? "",
+            "addressNumber" => $data['addressNumber'] ?? "",
+            "telephone" => $data['telephone'] ?? "",
+            "postalCode" => $data['postalCode'] ?? "",
         ]);
 
-        $manager = Manager::create([
-            "name" => $request->name,
-            "email" => $request->email,
-            "typeIdentificationNumber" => $request->exists("cpf") ? 2 : 0, // CPF
-            "identificationNumber" => $request->input("cpf", ""),
-            "address" => $request->input("address", ""),
-            "addressNumber" => $request->input("addressNumber", ""),
-            "telephone" => $request->input("telephone", ""),
-            "postalCode" => $request->input("postalCode", ""),
-        ]);
-
-        // Cria o usuário
-        $user = User::create([
-            "name" => $request->name,
-            "email" => $request->email,
+        $user = $this->createUser([
+            "name" => $data['name'],
+            "email" => $data['email'],
             "manager_id" => $manager->id,
-            "password" => Hash::make($request->password),
-            "cpf" => $request->input("cpf", ""),
-            "rg" => $request->input("rg", ""),
-            "address" => $request->input("address", ""),
-            "addressNumber" => $request->input("addressNumber", ""),
-            "telephone" => $request->input("telephone", ""),
-            "postalCode" => $request->input("postalCode", ""),
-            "salary" => $request->input("salary", "")
+            "password" => Hash::make($data['password']),
+            "cpf" => $data['cpf'] ?? "",
+            "rg" => $data['rg'] ?? "",
+            "address" => $data['address'] ?? "",
+            "addressNumber" => $data['addressNumber'] ?? "",
+            "telephone" => $data['telephone'] ?? "",
+            "postalCode" => $data['postalCode'] ?? "",
+            "salary" => $data['salary'] ?? 0,
         ]);
+
 
         $user->assignRole("owner");
 
@@ -61,6 +53,19 @@ class AuthController extends Controller
             "status" => true,
             "message" => "Usuário $user->name cadastrado com sucesso!"
         ]);
+    }
+
+    private function createManager(array $data)
+    {
+        $manager = new Manager();
+        $managerRepository = new ManagerRepository($manager);
+        return $managerRepository->create($data);
+    }
+    private function createUser(array $data)
+    {
+        $user = new User();
+        $userRepository = new UserRepository($user);
+        return $userRepository->create($data);
     }
 
     public function login(Request $request)
@@ -108,12 +113,6 @@ class AuthController extends Controller
 
     public function refreshToken()
     {
-//        if (auth()->user()->can('create_stock')) {
-//            return response()->json([
-//                "status" => false,
-//                "message" => "wadawadaweeuuu"
-//            ]);
-//        }
         $newToken = auth()->refresh();
 
         return response()->json([
@@ -129,7 +128,7 @@ class AuthController extends Controller
 
         return response()->json([
             "status" => true,
-            "message" => "Usuário logado com sucesso!"
+            "message" => "Usuário deslogado com sucesso!"
         ]);
     }
 
@@ -147,7 +146,7 @@ class AuthController extends Controller
         } catch (UserNotDefinedException $e) {
             return response()->json([
                 "status" => false,
-                "message" => "Token is not valid"
+                "message" => "Token não é valido"
             ], 401);
         }
     }
