@@ -92,22 +92,25 @@ abstract class AbstractRepository
     }
 
 
-    public function update($id, array $data): Model
+    public function update($id, array $data): bool
     {
         // TODO: Adicionar tratamento de erro, retorno para a api e etc
-        return $this->model->find($id)->update($data);
+        return $this->model->findOrFail($id)->update($data);
     }
 
-    public function destroy($id): bool
+    public function destroy($id)
     {
         // TODO: Adicionar tratamento de erro, retorno para a api e etc
         return $this->model->findOrFail($id)->delete();
     }
 
-    public function setManagerIdFilter()
+    public function setManagerIdFilter($managerId = null)
     {
-        // TODO Validar pro adm
-        $this->query->where("manager_id", "=", auth()->user()->manager->id);
+        // TODO Validar pro adm e trirar isso do abstract???
+        if ($managerId == null) {
+            $managerId = auth()->user()->manager->id;
+        }
+        $this->query->where("manager_id", "=", $managerId);
         return $this;
     }
 

@@ -36,6 +36,21 @@ class User extends Authenticatable implements JWTSubject
         'salary',
     ];
 
+    protected $updateRules = [
+        "name" => "filled",
+        "password" => "filled|confirmed",
+        "email" => 'required|email|unique:users',
+        "cpf" => "max:20",
+        "rg" => "max:20",
+        "address" => "min:10|max:200",
+        "addressNumber" => "max:10",
+        "telephone" => "max:20",
+        "postalCode" => "max:20",
+        "salary" => "numeric",
+        "role" => "filled"
+    ];
+
+
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -69,5 +84,12 @@ class User extends Authenticatable implements JWTSubject
     public function manager(): BelongsTo
     {
         return $this->belongsTo(Manager::class);
+    }
+
+    public function getUpdateRules($id)
+    {
+        $rules = $this->updateRules;
+        $rules['email'] = $rules['email'] . ',email,' . $id;
+        return $rules;
     }
 }

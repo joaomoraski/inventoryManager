@@ -65,7 +65,9 @@ class AuthController extends Controller
     {
         $user = new User();
         $userRepository = new UserRepository($user);
-        return $userRepository->create($data);
+        $user = $userRepository->create($data);
+        $user->assignRole("owner");
+        return $user;
     }
 
     public function login(Request $request)

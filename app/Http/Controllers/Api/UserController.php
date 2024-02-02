@@ -4,17 +4,22 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\CreateUserRequest;
+use App\Http\Requests\User\UpdateUserRequest;
+use App\Models\Permission;
 use App\Models\User;
 use App\Repositories\UserRepository;
+use App\Traits\UUID;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
 
 
+    protected $permission;
     public function __construct()
     {
         $this->middleware("auth:api");
+        $this->permission = new Permission();
     }
 
     public function create(CreateUserRequest $request)
@@ -66,15 +71,44 @@ class UserController extends Controller
         ], 200);
     }
 
-    public function update(Request $request)
+    public function update(Request $request, $id)
     {
+        $user = new User();
+        if (!auth()->user()->can($this->permission->getFullNameFromPermission("update", "users"))) {
+            return response()->json([
+                "message" => "Você não possuí permissão para realizar esta ação",
+            ], 401);
+        }
+        $userRepository = new UserRepository($user);
+        $rules = $user->getUpdateRules($id);
+        $data = $request->validate($rules);
+        if ($userRepository->update($id, $data)) {
+            return response()->json([
+                "message" => "Usuário foi atualizado com súcesso",
+            ]);
+        }
 
+        return response()->json([
+            "message" => "Opa opa, o usuário teve problemas para ser atualizado, verifica ai.",
+        ]);
     }
 
 
-    public function delete(Request $request)
+    public function delete($id)
     {
-
+        $message = "Falha em excluir usuário da base.";
+        $user = new User();
+        $userRepository = new UserRepository($user);
+        $user = $userRepository->findById($id);
+        $user->assignRole("stockManager");
+        dd(auth()->user()->can($this->permission->getFullNameFromPermission("delete", "users")));
+        return $userRepository->destroy($id);
+//        if ($destroyed) {
+//            $message = "Usuário $user->name, foi excluido da base com sucesso.";
+//        }
+        return response()->json([
+            "message" => $message
+        ], 200);
     }
 
 }

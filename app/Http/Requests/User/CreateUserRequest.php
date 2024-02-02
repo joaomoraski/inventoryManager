@@ -32,7 +32,8 @@ class CreateUserRequest extends FormRequest
             "addressNumber" => "max:10",
             "telephone" => "required|max:20",
             "postalCode" => "max:20",
-            "salary" => "numeric"
+            "salary" => "numeric",
+            "role" => "required"
         ];
     }
 }
