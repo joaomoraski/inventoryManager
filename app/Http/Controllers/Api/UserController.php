@@ -42,7 +42,12 @@ class UserController extends Controller
     {
         $userRepository = new UserRepository(auth()->user());
         if ($request->has('fields')) {
-            $userRepository->selectWithFields($request->fields);
+            $error = $userRepository->selectWithFields($request->fields);
+            if ($error) {
+                return response()->json([
+                   $error->content()
+                ], $error->status());
+            }
         }
 
         if ($request->has('filters')) {
@@ -73,12 +78,12 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
-        $user = new User();
-        if (!auth()->user()->can($this->permission->getFullNameFromPermission("update", "users"))) {
+        if (!$this->checkPermissionsToUsers("update")) {
             return response()->json([
                 "message" => "Você não possuí permissão para realizar esta ação",
             ], 401);
         }
+        $user = new User();
         $userRepository = new UserRepository($user);
         $rules = $user->getUpdateRules($id);
         $data = $request->validate($rules);
@@ -96,19 +101,25 @@ class UserController extends Controller
 
     public function delete($id)
     {
-        $message = "Falha em excluir usuário da base.";
+        if (!$this->checkPermissionsToUsers("delete")) {
+            return response()->json([
+                "message" => "Você não possuí permissão para realizar esta ação",
+            ], 401);
+        }
         $user = new User();
         $userRepository = new UserRepository($user);
         $user = $userRepository->findById($id);
-        $user->assignRole("stockManager");
-        dd(auth()->user()->can($this->permission->getFullNameFromPermission("delete", "users")));
-        return $userRepository->destroy($id);
-//        if ($destroyed) {
-//            $message = "Usuário $user->name, foi excluido da base com sucesso.";
-//        }
+        $isDestroyed = $userRepository->destroy($id);
+        $message = $isDestroyed ?  "Usuário $user->name excluido com sucesso da base." : "Usuário não pode ser excluido da base.";
+        $statusCode = $isDestroyed ? 200 : 500;
         return response()->json([
             "message" => $message
-        ], 200);
+        ], $statusCode);
+    }
+
+    public function checkPermissionsToUsers(string $pattern) : bool
+    {
+        return auth()->user()->can($this->permission->getFullNameFromPermission($pattern, "users"));
     }
 
 }

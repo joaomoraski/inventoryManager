@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use mysql_xdevapi\Exception;
+use PhpParser\Builder;
 
 abstract class AbstractRepository
 {
@@ -23,28 +24,43 @@ abstract class AbstractRepository
 
     public function selectWithFields($fields)
     {
-        // TODO arrumar a filtragem pelos fields, puxar as entidades relacionais e etc
-        // Converte a string de campos em um array
-        $fieldsArray = explode(',', $fields);
-
-        foreach ($fieldsArray as $field) {
-            // Se o campo for uma relação aninhada
-            if (Str::contains($field, '.')) {
-                // Usa Eager Loading para carregar as relações aninhadas
-                list($relation, $column) = explode('.', $field);
-                // Adiciona as colunas específicas da relação ao select
-                $this->query->with([$relation => function ($query) use ($column) {
-                    $query->addSelect($column);
-                }]);
-            } else {
-                // Se não for uma relação aninhada, adiciona ao select
-                $this->query->addSelect($field);
-            }
+        // Verifica se a request esta chegando de forma correta.
+        // Caso tenha { ou } no campos, é para considerar que o mesmo tanto que abriu precisa fechar.
+        // Caso seja 0 nos dois vai seguir normal.
+        $nestedRelationPatternSearchOpen = "/{/m";
+        $nestedRelationPatternSearchClose = "/}/m";
+        if (preg_match_all($nestedRelationPatternSearchOpen, $fields) !=
+            preg_match_all($nestedRelationPatternSearchClose, $fields)) {
+            return response()->json([
+                "message" => "O campo 'fields' possui um padrão não reconhecido. Verifique antes de prosseguir."
+            ], 400);
         }
 
-        return $this;
+        if (preg_match("/{|}/m", $fields)) {
+            $pattern = '/,(?![^{]*})/';
+            $splitFieldsAndNestedFields = preg_split($pattern, $fields);
+            $onlyNestedFields = [];
+            foreach ($splitFieldsAndNestedFields as $index => $field) {
+                if (preg_match("/{|}/m", $field)) {
+                    $onlyNestedFields[] = $field;
+                    array_splice($splitFieldsAndNestedFields, $index, $index);
+                }
+            }
+            $onlyNestedFields = str_replace("{", ",", $onlyNestedFields);
+            $onlyNestedFields = str_replace("}", "", $onlyNestedFields);
+            $preg_split = preg_split("/,/m", $onlyNestedFields[0]);
+            $relation = $preg_split[0];
+            $columns = array_splice($preg_split, 1);
+            $splitFieldsAndNestedFields[] = $relation.'_id';
+            $this->query->addSelect($splitFieldsAndNestedFields);
+            $this->query->with([$relation => function ($query) use ($columns) {
+                $query->select($columns);
+            }]);
+        }
+        return response()->json([
+            "message" => "Erro ao realizar sua consulta, tente novamente mais tarde"
+        ], 500);
     }
-
 
     public function selectWithFilter($filters)
     {
@@ -102,16 +118,6 @@ abstract class AbstractRepository
     {
         // TODO: Adicionar tratamento de erro, retorno para a api e etc
         return $this->model->findOrFail($id)->delete();
-    }
-
-    public function setManagerIdFilter($managerId = null)
-    {
-        // TODO Validar pro adm e trirar isso do abstract???
-        if ($managerId == null) {
-            $managerId = auth()->user()->manager->id;
-        }
-        $this->query->where("manager_id", "=", $managerId);
-        return $this;
     }
 
     public function getResults()
