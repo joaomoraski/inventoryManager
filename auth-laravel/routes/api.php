@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ManagerController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +35,12 @@ Route::group([
     Route::get("/user/{id}", [UserController::class, "findById"]); // Localizar
     Route::put("/user/{id}", [UserController::class, "update"]); // Update
     Route::delete("/user/{id}", [UserController::class, "delete"]); // Delete
+
+
+    Route::get("/manager/{id}", [ManagerController::class, "findById"]); // Localizar
+    Route::put("/manager/{id}", [ManagerController::class, "update"]); // Update
+
+
     // TODO: criar as rotas de alterar a senha.
 });
 

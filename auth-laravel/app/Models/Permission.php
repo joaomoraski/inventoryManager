@@ -10,6 +10,7 @@ use Spatie\Permission\Models\Permission as SpatiePermission;
 class Permission extends SpatiePermission
 {
     use HasFactory, HasUuids;
+
     private $permissionPattern = [
         "create" => 'create_',
         "read" => 'read_',
@@ -21,9 +22,19 @@ class Permission extends SpatiePermission
         "stock" => 'stock',
         "sales" => 'sales'
     ];
-    public function getFullNameFromPermission(string $pattern, string $type) : string
+
+    public function getFullNameFromPermission(string $pattern, string $type): string
     {
-        return $this->getPermissionPattern($pattern).$this->getTypePermissions($type);
+        return $this->getPermissionPattern($pattern) . $this->getTypePermissions($type);
+    }
+
+    public function getMultipleFullNameFromPermissions(string $type, array $patterns): array
+    {
+        $permissions = array();
+        foreach ($patterns as $item => $key) {
+            $permissions[$key] = $this->getPermissionPattern($item) . $this->getTypePermissions($type);
+        }
+        return $permissions;
     }
 
     public function getPermissionPattern(string $key): string

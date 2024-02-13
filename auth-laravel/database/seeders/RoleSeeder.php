@@ -27,20 +27,23 @@ class RoleSeeder extends Seeder
     {
         Role::create(['name' => 'admin']);
 
-        $users_permission = ["create_users", "read_users", "update_users", "delete_users"];
-        $stock_permission = ["create_stock", "read_stock", "update_stock", "delete_stock"];
-        $sales_permission = ["create_sales", "read_sales", "update_sales", "delete_sales"];
+        $userPermission = ["create_users", "read_users", "update_users", "delete_users"];
+        $stockPermission = ["create_stock", "read_stock", "update_stock", "delete_stock"];
+        $salesPermission = ["create_sales", "read_sales", "update_sales", "delete_sales"];
+        $managerPermission = ["create_manager", "read_manager", "update_manager", "delete_manager"];
 
         $ownerRole = Role::create(['name' => 'owner']);
-        $ownerRole->givePermissionTo($users_permission);
-        $ownerRole->givePermissionTo($stock_permission);
-        $ownerRole->givePermissionTo($sales_permission);
+        $ownerRole->givePermissionTo($userPermission);
+        $ownerRole->givePermissionTo($stockPermission);
+        $ownerRole->givePermissionTo($salesPermission);
+        $ownerRole->givePermissionTo($managerPermission);
+
 
         $stockManagerRole = Role::create(['name' => 'stockManager']);
-        $stockManagerRole->givePermissionTo($stock_permission);
+        $stockManagerRole->givePermissionTo($stockPermission);
 
         $workerRole = Role::create(['name' => 'worker']);
-        $workerRole->givePermissionTo($sales_permission);
+        $workerRole->givePermissionTo($salesPermission);
         $workerRole->givePermissionTo("read_stock");
     }
 }

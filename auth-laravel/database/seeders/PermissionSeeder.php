@@ -27,7 +27,7 @@ class PermissionSeeder extends Seeder
         // See products(stock)
         // See sales history from one buyer(based on cpf)
         $permissionPattern = ['create_', 'read_', 'update_', 'delete_'];
-        $typePermissions = ['users', 'stock', 'sales'];
+        $typePermissions = ['users', 'stock', 'sales', 'manager'];
 
         foreach ($permissionPattern as $pattern) {
             foreach ($typePermissions as $typePermission) {

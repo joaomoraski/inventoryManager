@@ -2,12 +2,10 @@
 
 namespace App\Repositories;
 
+use Exception;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use mysql_xdevapi\Exception;
-use PhpParser\Builder;
 
 abstract class AbstractRepository
 {
@@ -36,12 +34,12 @@ abstract class AbstractRepository
             ], 400);
         }
 
-        if (preg_match("/{|}/m", $fields)) {
+        if (preg_match("/[{}]/m", $fields)) {
             $pattern = '/,(?![^{]*})/';
             $splitFieldsAndNestedFields = preg_split($pattern, $fields);
             $onlyNestedFields = [];
             foreach ($splitFieldsAndNestedFields as $index => $field) {
-                if (preg_match("/{|}/m", $field)) {
+                if (preg_match("/[{}]/m", $field)) {
                     $onlyNestedFields[] = $field;
                     array_splice($splitFieldsAndNestedFields, $index, $index);
                 }
@@ -51,17 +49,21 @@ abstract class AbstractRepository
             $preg_split = preg_split("/,/m", $onlyNestedFields[0]);
             $relation = $preg_split[0];
             $columns = array_splice($preg_split, 1);
-            $splitFieldsAndNestedFields[] = $relation.'_id';
+            $splitFieldsAndNestedFields[] = $relation . '_id';
             $this->query->addSelect($splitFieldsAndNestedFields);
             $this->query->with([$relation => function ($query) use ($columns) {
                 $query->select($columns);
             }]);
         }
+
         return response()->json([
             "message" => "Erro ao realizar sua consulta, tente novamente mais tarde"
         ], 500);
     }
 
+    /**
+     * @throws Exception
+     */
     public function selectWithFilter($filters)
     {
         $filters = explode(";", $filters);

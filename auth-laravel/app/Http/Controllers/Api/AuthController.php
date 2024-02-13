@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRegisterRequest;
 use App\Models\Manager;
+use App\Models\Permission;
 use App\Models\User;
 use App\Repositories\ManagerRepository;
 use App\Repositories\UserRepository;
+use http\Client\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -16,6 +19,17 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
+    protected $permission;
+
+    /**
+     * @param $permission
+     */
+    public function __construct()
+    {
+        $this->permission = new Permission();
+    }
+
+
     public function register(UserRegisterRequest $request)
     {
         $data = $request->validated();
@@ -61,6 +75,7 @@ class AuthController extends Controller
         $managerRepository = new ManagerRepository($manager);
         return $managerRepository->create($data);
     }
+
     private function createUser(array $data)
     {
         $user = new User();
@@ -134,8 +149,18 @@ class AuthController extends Controller
         ]);
     }
 
+    public function checkPermission(string $type, string $pattern): bool
+    {
+        return auth()->userOrFail()->hasPermissionTo($this->permission->getFullNameFromPermission($pattern, $type));
+    }
 
-    public function validateToken(Request $request)
+    public function checkAnyPermission(string $type, array $patterns): bool
+    {
+        return auth()->userOrFail()->hasAnyPermission($this->permission->getMultipleFullNameFromPermissions($type, $patterns));
+    }
+
+
+    public function validateToken(Request $request): JsonResponse
     {
         try {
             $user = auth()->userOrFail();

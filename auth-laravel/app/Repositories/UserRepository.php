@@ -13,7 +13,7 @@ class UserRepository extends AbstractRepository
         $this->model = $this->model->whereNotNull("manager_id");
     }
 
-    public function destroy($id) : bool
+    public function destroy($id): bool
     {
         $user = $this->findById($id);
         if ($user->hasRole('owner')) {
@@ -27,7 +27,6 @@ class UserRepository extends AbstractRepository
 
     public function setManagerIdFilter($managerId = null)
     {
-        // TODO Validar pro adm e trirar isso do abstract???
         if ($managerId == null) {
             $managerId = auth()->user()->manager->id;
         }

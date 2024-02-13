@@ -22,6 +22,23 @@ class Manager extends Model
         'postalCode' // cep
     ];
 
+    protected $rules = [
+        "name" => "filled",
+        "email" => 'required|email|unique:managers',
+        'typeIdentificationNumber' => "max:2",
+        'identificationNumber' => "max:30", //cpf or cnpj
+        "address" => "min:10|max:200",
+        "addressNumber" => "max:10",
+        "telephone" => "max:20",
+        "postalCode" => "max:20",
+    ];
+
+    public function getRules(): array
+    {
+        return $this->rules;
+    }
+
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
