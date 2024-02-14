@@ -1,13 +1,16 @@
-package http_server
+package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 )
 
+func homePage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Bem-vindo ao meu website em Go!")
+}
+
 func main() {
-	handler := http.HandlerFunc(HttpServer)
-	if err := http.ListenAndServe(":5000", handler); err != nil {
-		log.Fatalf("não foi possivel ouvir a chama na porta 5000 %v", err)
-	}
+	http.HandleFunc("/", homePage)
+	fmt.Println("Servidor rodando na porta 5000")
+	http.ListenAndServe(":5000", nil)
 }
